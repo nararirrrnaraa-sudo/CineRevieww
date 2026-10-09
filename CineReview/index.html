@@ -1,0 +1,247 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineReview | Dunia Film</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="js/script.js"></script>
+</head>
+
+<body x-data="cineReview()" x-init="loadPopularMovies()">
+
+    <!-- NAVBAR -->
+    <nav class="sticky top-0 z-40 border-b border-white/10 bg-gray-950/95">
+        <div class="max-w-7xl mx-auto px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+            <a href="#" class="text-2xl font-extrabold text-purple-400">
+                Cine<span class="text-white">Review</span>
+            </a>
+
+            <div class="flex items-center gap-4">
+                <a href="#beranda" class="text-gray-300 hover:text-purple-400">Beranda</a>
+                <a href="#film" class="text-gray-300 hover:text-purple-400">Film</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section id="beranda" class="max-w-7xl mx-auto px-5 py-16 md:py-24">
+        <div class="max-w-3xl">
+            <p class="text-purple-400 uppercase tracking-widest text-sm font-bold mb-4">
+                Temukan film favoritmu
+            </p>
+
+            <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
+                Dunia Film Ada di
+                <span class="text-purple-400">CineReview.</span>
+            </h1>
+
+            <p class="text-gray-400 text-lg mb-8">
+                Jelajahi film populer, lihat rating, dan temukan cerita
+                yang cocok untuk menemani waktu luangmu.
+            </p>
+
+            <a href="#film"
+                class="inline-block bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-bold">
+                Jelajahi Film
+            </a>
+        </div>
+    </section>
+
+    <!-- DAFTAR FILM -->
+    <main id="film" class="max-w-7xl mx-auto px-5 pb-16">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-8">
+            <div>
+                <p class="text-purple-400 text-sm font-bold mb-2">PILIHAN UNTUKMU</p>
+                <h2 class="text-3xl font-bold">Film Populer</h2>
+                <p class="text-gray-400 mt-2">Film populer dari TMDB</p>
+            </div>
+
+            <!-- PENCARIAN DAN FILTER -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input
+                    type="search"
+                    x-model="searchQuery"
+                    placeholder="Cari judul film..."
+                    class="bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
+                >
+
+                <select
+                    x-model="selectedYear"
+                    class="bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-purple-500"
+                >
+                    <option value="">Semua Tahun</option>
+                    <template x-for="year in years" :key="year">
+                        <option :value="String(year)" x-text="year"></option>
+                    </template>
+                </select>
+            </div>
+        </div>
+
+        <!-- LOADING -->
+        <div x-show="loading" class="text-center py-16">
+            <div class="text-purple-400 text-xl font-bold">Memuat film...</div>
+            <p class="text-gray-400 mt-2">Mohon tunggu sebentar.</p>
+        </div>
+
+        <!-- PESAN ERROR -->
+        <div x-show="errorMessage"
+            class="bg-red-950/50 border border-red-500/40 rounded-xl p-5 mb-8">
+            <h3 class="text-red-400 font-bold mb-2">Terjadi masalah</h3>
+            <p x-text="errorMessage" class="text-gray-200"></p>
+
+            <button
+                @click="loadPopularMovies()"
+                class="mt-4 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg">
+                Coba Lagi
+            </button>
+        </div>
+
+        <!-- KARTU FILM -->
+        <div
+            x-show="!loading && !errorMessage"
+            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5"
+        >
+            <template x-for="movie in filteredMovies" :key="movie.id">
+                <article
+                    class="movie-card bg-gray-900 border border-white/5 rounded-2xl overflow-hidden cursor-pointer"
+                    @click="showMovie(movie)"
+                >
+                    <div class="relative">
+                        <img
+                            :src="getPoster(movie.poster_path)"
+                            :alt="movie.title"
+                            class="w-full aspect-[2/3] object-cover"
+                            loading="lazy"
+                        >
+
+                        <div class="absolute top-3 right-3 bg-black/80 px-2 py-1 rounded-lg text-yellow-400 text-sm font-bold">
+                            ★ <span x-text="formatRating(movie.vote_average)"></span>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <h3 class="font-bold line-clamp-2 min-h-12"
+                            x-text="movie.title"></h3>
+
+                        <p class="text-gray-400 text-sm mt-2"
+                            x-text="getYear(movie.release_date)"></p>
+
+                        <button
+                            class="w-full mt-4 bg-purple-600/20 text-purple-300 hover:bg-purple-600 hover:text-white rounded-lg py-2 text-sm font-bold"
+                            @click.stop="showMovie(movie)"
+                        >
+                            Lihat Detail
+                        </button>
+                    </div>
+                </article>
+            </template>
+        </div>
+
+        <!-- FILM TIDAK DITEMUKAN -->
+        <div
+            x-show="!loading && !errorMessage && filteredMovies.length === 0"
+            class="text-center py-16"
+        >
+            <p class="text-xl font-bold">Film tidak ditemukan.</p>
+            <p class="text-gray-400 mt-2">Coba kata kunci atau tahun yang berbeda.</p>
+        </div>
+
+        <!-- TOMBOL FILM LAINNYA -->
+        <div x-show="!loading && !errorMessage" class="text-center mt-10">
+            <button
+                @click="loadMoreMovies()"
+                :disabled="loadingMore"
+                class="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-6 py-3 rounded-xl font-bold"
+            >
+                <span x-text="loadingMore ? 'Memuat...' : 'Muat Film Lainnya'"></span>
+            </button>
+        </div>
+    </main>
+
+    <!-- MODAL DETAIL FILM -->
+    <div
+        x-show="selectedMovie"
+        x-cloak
+        @keydown.escape.window="selectedMovie = null"
+        @click.self="selectedMovie = null"
+        class="fixed inset-0 z-50 bg-black/85 overflow-y-auto p-4 md:p-8"
+    >
+        <div
+            class="max-w-3xl mx-auto bg-gray-900 rounded-2xl overflow-hidden relative my-8"
+            x-show="selectedMovie"
+        >
+            <button
+                @click="selectedMovie = null"
+                class="absolute top-4 right-4 z-10 bg-black/70 hover:bg-purple-600 w-10 h-10 rounded-full text-xl"
+                aria-label="Tutup detail"
+            >
+                &times;
+            </button>
+
+            <template x-if="selectedMovie">
+                <div>
+                    <img
+                        :src="getBackdrop(selectedMovie.backdrop_path) || getPoster(selectedMovie.poster_path)"
+                        :alt="selectedMovie.title"
+                        class="w-full max-h-80 object-cover"
+                    >
+
+                    <div class="p-6 md:p-8">
+                        <h2 class="text-3xl font-extrabold mb-3"
+                            x-text="selectedMovie.title"></h2>
+
+                        <div class="flex flex-wrap gap-4 text-sm text-gray-400 mb-5">
+                            <span x-text="'Tahun: ' + getYear(selectedMovie.release_date)"></span>
+                            <span class="text-yellow-400 font-bold"
+                                x-text="'★ ' + formatRating(selectedMovie.vote_average) + ' / 10'">
+                            </span>
+                        </div>
+
+                        <h3 class="font-bold text-lg mb-2">Sinopsis</h3>
+
+                        <p class="text-gray-300 leading-relaxed"
+                            x-text="selectedMovie.overview || 'Sinopsis belum tersedia.'">
+                        </p>
+
+                        <button
+                            @click="loadTrailer(selectedMovie.id)"
+                            class="mt-6 bg-purple-600 hover:bg-purple-700 px-5 py-3 rounded-xl font-bold"
+                        >
+                            Lihat Trailer
+                        </button>
+
+                        <div x-show="trailerMessage"
+                            class="mt-4 text-gray-300"
+                            x-text="trailerMessage">
+                        </div>
+
+                        <div x-show="trailerUrl" class="mt-5">
+                            <iframe
+                                :src="trailerUrl"
+                                class="w-full aspect-video rounded-xl"
+                                title="Trailer film"
+                                allowfullscreen
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            ></iframe>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/10 py-8 text-center text-gray-500 text-sm">
+        <p>&copy; 2026 CineReview. Data film disediakan oleh TMDB.</p>
+        <p class="mt-2">
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+        </p>
+    </footer>
+
+</body>
+</html>
